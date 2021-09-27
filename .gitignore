@@ -8,3 +8,7 @@ Logs/
 from_acc_token/
 to_acc_token/
 credentials.json
+
+# Not wanted updates
+Startup.cs
+appsettings.json
