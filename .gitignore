@@ -2,6 +2,7 @@
 bin/
 obj/
 Logs/
+.vs/
 
 # Google tokens and credentials
 from_acc_token/
