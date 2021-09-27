@@ -6,9 +6,11 @@ namespace GCalSync
 {
     public class ApplicationSettings
     {
-        public static readonly string LeadingText = "[University] - ";
+        public static readonly string Prefix = "[University] - ";
         public static readonly string ApplicationName = "GCalsSync";
         public static readonly string[] CalendarScopes = new[] { CalendarService.Scope.Calendar };
+
+        public const int MAX_NUMBER_OF_EVENTS = 5;
 
         private static IConfiguration configuration;
 

@@ -27,7 +27,6 @@ namespace GCalSync.Helpers
                 CancellationToken.None,
                 new FileDataStore(credPath, true)).Result;
 
-
             Service = new CalendarService(new BaseClientService.Initializer()
             {
                 HttpClientInitializer = credential,
@@ -42,18 +41,12 @@ namespace GCalSync.Helpers
 
             Service.Events.Insert(new Event()
             {
-                Id = @event.Id,
                 Start = @event.Start,
                 End = @event.End,
-                Summary = $"{ApplicationSettings.LeadingText}{@event.Summary}",
+                Summary = $"{ApplicationSettings.Prefix}{@event.Summary}",
                 EventType = "outOfOffice",
                 Reminders = new()
                 {
-                    Overrides = new List<EventReminder>()
-                    {
-                        new() { Method = "popup", Minutes = 10 },
-                        new() { Method = "popup", Minutes = 30 }
-                    },
                     UseDefault = false
                 },
                 Description = @event.Description,
@@ -76,23 +69,24 @@ namespace GCalSync.Helpers
             return Service.CalendarList.List().Execute();
         }
 
-        public Events GetEvents(string eventList)
+        public Events GetEvents(string eventList, int numberOfEvents)
         {
             EventsResource.ListRequest request = Service.Events.List(eventList);
             request.TimeMin = DateTime.Now;
             request.ShowDeleted = false;
             request.SingleEvents = true;
-            request.MaxResults = 50;
+            request.MaxResults = numberOfEvents;
             request.OrderBy = EventsResource.ListRequest.OrderByEnum.StartTime;
             return request.Execute();
         }
 
-        public List<Event> GetEventsFromCalendars(List<CalendarListEntry> calendarListItems)
+        public List<Event> GetEventsFromCalendars(List<CalendarListEntry> calendarListItems, int numberOfEvents)
         {
             List<Event> events = new();
             foreach (CalendarListEntry calendarListItem in calendarListItems)
             {
-                foreach (Event item in GetEvents(calendarListItem.Id).Items)
+                var calendarItems = GetEvents(calendarListItem.Id, numberOfEvents).Items;
+                foreach (Event item in calendarItems)
                 {
                     if (item.Start.DateTime == null)
                     {
