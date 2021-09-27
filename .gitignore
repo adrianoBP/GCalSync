@@ -1,0 +1,9 @@
+# Not needed folders
+bin/
+obj/
+Logs/
+
+# Google tokens and credentials
+from_acc_token/
+to_acc_token/
+credentials.json
