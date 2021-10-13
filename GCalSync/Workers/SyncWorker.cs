@@ -24,7 +24,7 @@ namespace GCalSync.Workers
                 var toCalendarListItems = toCalendarAPI.GetCalendarList().Items
                     .Where(x => x.Id == ApplicationSettings.ToAccountIdSync).ToList();
                 List<Event> toEvents = toCalendarAPI.GetEventsFromCalendars(toCalendarListItems,
-                    ApplicationSettings.MAX_NUMBER_OF_EVENTS * ApplicationSettings.FromAccountIdsSync.Count);   // Make sure all available avents are returned
+                    ApplicationSettings.MAX_NUMBER_OF_EVENTS * 3);   // Make sure all available avents are returned
 
                 var (eventsToAdd, eventsToDelete, eventsToUpdate) = GetEventActions(fromEvents, toEvents);
 
@@ -93,7 +93,7 @@ namespace GCalSync.Workers
 
         private static string BuildEventReference(Event @event)
         {
-            return $"{@event.Summary.Replace(ApplicationSettings.Prefix, "")}{@event.Description}";
+            return $"{@event.Summary.Replace(ApplicationSettings.Prefix, "")}{@event.Description}{@event.Start.DateTime:ddMM}";
         }
 
         private static void DeleteEvents(List<Event> events, CalendarAPIHelper calendarAPIHelper)

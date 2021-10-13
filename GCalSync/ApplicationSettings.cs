@@ -10,7 +10,7 @@ namespace GCalSync
         public static readonly string ApplicationName = "GCalsSync";
         public static readonly string[] CalendarScopes = new[] { CalendarService.Scope.Calendar };
 
-        public const int MAX_NUMBER_OF_EVENTS = 5;
+        public const int MAX_NUMBER_OF_EVENTS = 50;
 
         private static IConfiguration configuration;
 

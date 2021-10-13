@@ -75,14 +75,17 @@ namespace GCalSync
             AccountWorker accountWorker = new();
             SyncWorker syncWorker = new();
 
-            RecurringJob.AddOrUpdate("CleanupWorkerFull", () => cleanupWorker.FullCleanup(), Cron.Never);
-            RecurringJob.AddOrUpdate("CleanupWorkerFrom", () => cleanupWorker.ClearFromAccount(), Cron.Never);
-            RecurringJob.AddOrUpdate("CleanupWorkerTo", () => cleanupWorker.ClearToAccount(), Cron.Never);
-
+#if DEBUG
             RecurringJob.AddOrUpdate("AccountWorkerFrom", () => accountWorker.AddFromAccount(), Cron.Never);
             RecurringJob.AddOrUpdate("AccountWorkerTo", () => accountWorker.AddToAccount(), Cron.Never);
-
             RecurringJob.AddOrUpdate("SyncWorker", () => syncWorker.StartSync(), Cron.Never);
+#else
+            RecurringJob.AddOrUpdate("SyncWorker", () => syncWorker.StartSync(), "*/10 6-23 * * *");
+            RecurringJob.AddOrUpdate("CleanupWorkerLogs", () => cleanupWorker.ClearLogs(), Cron.Daily(10));
+#endif
+            RecurringJob.AddOrUpdate("CleanupWorkerFrom", () => cleanupWorker.ClearFromAccount(), Cron.Never);
+            RecurringJob.AddOrUpdate("CleanupWorkerTo", () => cleanupWorker.ClearToAccount(), Cron.Never);
+            RecurringJob.AddOrUpdate("CleanupWorkerFull", () => cleanupWorker.FullCleanup(), Cron.Never);
         }
     }
 }
