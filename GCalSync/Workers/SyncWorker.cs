@@ -26,6 +26,14 @@ namespace GCalSync.Workers
                 List<Event> toEvents = toCalendarAPI.GetEventsFromCalendars(toCalendarListItems,
                     ApplicationSettings.MAX_NUMBER_OF_EVENTS * 3);   // Make sure all available avents are returned
 
+                var lastEventFrom = fromEvents.OrderBy(e => e.Start.DateTime).Last();
+                var lastEventTo = toEvents.OrderBy(e => e.Start.DateTime).Last();
+
+                if (lastEventFrom.Start.DateTime < lastEventTo.Start.DateTime)
+                    toEvents = toEvents.Where(e => e.Start.DateTime < lastEventFrom.Start.DateTime).ToList();
+                else
+                    fromEvents = fromEvents.Where(e => e.Start.DateTime < lastEventTo.Start.DateTime).ToList();
+
                 var (eventsToAdd, eventsToDelete, eventsToUpdate) = GetEventActions(fromEvents, toEvents);
 
                 AddEvents(eventsToAdd, toCalendarAPI);
