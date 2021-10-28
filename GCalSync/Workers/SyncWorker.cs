@@ -29,7 +29,7 @@ namespace GCalSync.Workers
                 var lastEventFrom = fromEvents.OrderBy(e => e.Start.DateTime).Last();
                 var lastEventTo = toEvents.OrderBy(e => e.Start.DateTime).Last();
 
-                if (lastEventFrom.Start.DateTime < lastEventTo.Start.DateTime)
+                if (lastEventFrom.Start.DateTime <= lastEventTo.Start.DateTime)
                     toEvents = toEvents.Where(e => e.Start.DateTime < lastEventFrom.Start.DateTime).ToList();
                 else
                     fromEvents = fromEvents.Where(e => e.Start.DateTime < lastEventTo.Start.DateTime).ToList();
@@ -101,7 +101,7 @@ namespace GCalSync.Workers
 
         private static string BuildEventReference(Event @event)
         {
-            return $"{@event.Summary.Replace(ApplicationSettings.Prefix, "")}{@event.Description}{@event.Start.DateTime:ddMM}";
+            return $"{@event.Summary.Replace(ApplicationSettings.Prefix, "")}{@event.Start.DateTime:HHmmddMMYYYY}";
         }
 
         private static void DeleteEvents(List<Event> events, CalendarAPIHelper calendarAPIHelper)
