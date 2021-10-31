@@ -1,6 +1,5 @@
 ﻿using GCalSync.Helpers;
 using Google.Apis.Calendar.v3.Data;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,10 +28,10 @@ namespace GCalSync.Workers
                 var lastEventFrom = fromEvents.OrderBy(e => e.Start.DateTime).Last();
                 var lastEventTo = toEvents.OrderBy(e => e.Start.DateTime).Last();
 
-                if (lastEventFrom.Start.DateTime <= lastEventTo.Start.DateTime)
-                    toEvents = toEvents.Where(e => e.Start.DateTime < lastEventFrom.Start.DateTime).ToList();
+                if (lastEventFrom.Start.DateTime < lastEventTo.Start.DateTime)
+                    toEvents = toEvents.Where(e => e.Start.DateTime <= lastEventFrom.Start.DateTime).ToList();
                 else
-                    fromEvents = fromEvents.Where(e => e.Start.DateTime < lastEventTo.Start.DateTime).ToList();
+                    fromEvents = fromEvents.Where(e => e.Start.DateTime <= lastEventTo.Start.DateTime).ToList();
 
                 var (eventsToAdd, eventsToDelete, eventsToUpdate) = GetEventActions(fromEvents, toEvents);
 
@@ -101,7 +100,7 @@ namespace GCalSync.Workers
 
         private static string BuildEventReference(Event @event)
         {
-            return $"{@event.Summary.Replace(ApplicationSettings.Prefix, "")}{@event.Start.DateTime:HHmmddMMYYYY}";
+            return $"{@event.Summary.Replace(ApplicationSettings.Prefix, "")}{@event.Start.DateTime:HHmmddMMyy}";
         }
 
         private static void DeleteEvents(List<Event> events, CalendarAPIHelper calendarAPIHelper)
