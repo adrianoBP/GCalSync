@@ -39,6 +39,16 @@ namespace GCalSync.Helpers
             TimeZoneInfo cst = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
             var offset = cst.GetUtcOffset((DateTime)@event.Start.DateTime);
 
+            // All-day events cannot have a DateTime object, just a Date instead
+
+            if (
+                ((DateTime)@event.Start.DateTime).ToString("HH:mm:ss") == "00:00:00" &&
+                ((DateTime)@event.End.DateTime).ToString("HH:mm:ss") == "00:00:00")
+            {
+                @event.Start.DateTime = null;
+                @event.End.DateTime = null;
+            }
+
             Service.Events.Insert(new Event()
             {
                 Start = @event.Start,
