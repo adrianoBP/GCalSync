@@ -1,3 +1,4 @@
+using GCalSync.Helpers;
 using GCalSync.Workers;
 using Hangfire;
 using Hangfire.MemoryStorage;
@@ -47,6 +48,7 @@ namespace GCalSync
               .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
             ApplicationSettings.Init(builder.Build());
+            CalendarAPIHelper.Init();
 
             app.UseHsts();
 

@@ -14,33 +14,84 @@ namespace GCalSync.Helpers
 {
     public class CalendarAPIHelper
     {
-        private CalendarService Service { get; set; }
+        private class AccountServiceDetails
+        {
+            public CalendarService CalendarService { get; set; }
+            public UserCredential UserCredential { get; set; }
+
+            public void UpdateCalendarService()
+            {
+                CalendarService = new CalendarService(new BaseClientService.Initializer()
+                {
+                    HttpClientInitializer = UserCredential,
+                    ApplicationName = ApplicationSettings.ApplicationName
+                });
+            }
+
+            public void RefreshToken()
+            {
+                UserCredential.RefreshTokenAsync(CancellationToken.None);
+                UpdateCalendarService();
+            }
+        }
+
+        private static AccountServiceDetails _fromAccountService { get; set; } = new AccountServiceDetails();
+        private static AccountServiceDetails _toAccountService { get; set; } = new AccountServiceDetails();
+
+
+        private static DateTime _lastAuthDate = DateTime.MinValue;
+
+        private AccountServiceDetails _currentAccountDetails = null;
 
         public CalendarAPIHelper(bool isFrom)
         {
-            using var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read);
-            string credPath = $"{(isFrom ? "from" : "to")}_acc_token";
-            UserCredential credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.FromStream(stream).Secrets,
+            if (isFrom)
+                _currentAccountDetails = _fromAccountService;
+            else
+                _currentAccountDetails = _toAccountService;
+        }
+
+        public static void Init()
+        {
+            InitializeCredentials(true);
+            InitializeCredentials(false);
+        }
+
+        private static void InitializeCredentials(bool isFromAccount)
+        {
+            using var credentialsStream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read);
+
+            AccountServiceDetails accountServiceDetails = _fromAccountService;
+
+            if (!isFromAccount)
+                accountServiceDetails = _toAccountService;
+
+
+            string credPath = $"{(isFromAccount ? "from" : "to")}_acc_token";
+            accountServiceDetails.UserCredential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                GoogleClientSecrets.FromStream(credentialsStream).Secrets,
                 ApplicationSettings.CalendarScopes,
                 "user",
                 CancellationToken.None,
                 new FileDataStore(credPath, true)).Result;
 
-            Service = new CalendarService(new BaseClientService.Initializer()
+            accountServiceDetails.UpdateCalendarService();
+        }
+
+        public static void ValidateAuthToken()
+        {
+            // For now refresh token every 24 hours - If it fails, then we need to add
+            // a check for when the token expires and refresh the token at that time
+            if ((DateTime.UtcNow - _lastAuthDate).TotalHours > 24)
             {
-                HttpClientInitializer = credential,
-                ApplicationName = ApplicationSettings.ApplicationName
-            });
+                _fromAccountService.RefreshToken();
+                _toAccountService.RefreshToken();
+            }
         }
 
         public void AddEvent(Event @event, string calendarId)
         {
-            TimeZoneInfo cst = TimeZoneInfo.FindSystemTimeZoneById("GMT Standard Time");
-            var offset = cst.GetUtcOffset((DateTime)@event.Start.DateTime);
-
             // All-day events cannot have a DateTime object, just a Date instead
-
             if (
                 ((DateTime)@event.Start.DateTime).ToString("HH:mm:ss") == "00:00:00" &&
                 ((DateTime)@event.End.DateTime).ToString("HH:mm:ss") == "00:00:00")
@@ -49,7 +100,7 @@ namespace GCalSync.Helpers
                 @event.End.DateTime = null;
             }
 
-            Service.Events.Insert(new Event()
+            _toAccountService.CalendarService.Events.Insert(new Event()
             {
                 Start = @event.Start,
                 End = @event.End,
@@ -66,22 +117,22 @@ namespace GCalSync.Helpers
 
         public void DeleteEvent(Event @event, string calendarId)
         {
-            Service.Events.Delete(calendarId, @event.Id).Execute();
+            _currentAccountDetails.CalendarService.Events.Delete(calendarId, @event.Id).Execute();
         }
 
         public void UpdateEvent(Event @event, string calendarId)
         {
-            Service.Events.Update(@event, calendarId, @event.Id).Execute();
+            _currentAccountDetails.CalendarService.Events.Update(@event, calendarId, @event.Id).Execute();
         }
 
         public CalendarList GetCalendarList()
         {
-            return Service.CalendarList.List().Execute();
+            return _currentAccountDetails.CalendarService.CalendarList.List().Execute();
         }
 
         public Events GetEvents(string eventList, int numberOfEvents)
         {
-            EventsResource.ListRequest request = Service.Events.List(eventList);
+            EventsResource.ListRequest request = _currentAccountDetails.CalendarService.Events.List(eventList);
             request.TimeMin = DateTime.Now;
             request.ShowDeleted = false;
             request.SingleEvents = true;

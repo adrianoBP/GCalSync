@@ -14,6 +14,8 @@ namespace GCalSync.Workers
             {
                 LoggerHelper.AddLog("Sync started", LoggerHelper.Severity.DEBUG);
 
+                CalendarAPIHelper.ValidateAuthToken();
+
                 CalendarAPIHelper fromCalendarAPI = new(true);
                 var fromCalendarListItems = fromCalendarAPI.GetCalendarList().Items
                     .Where(x => ApplicationSettings.FromAccountIdsSync.Contains(x.Id)).ToList();
