@@ -48,7 +48,6 @@ namespace GCalSync
               .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
             ApplicationSettings.Init(builder.Build());
-            CalendarAPIHelper.Init();
 
             app.UseHsts();
 

@@ -16,8 +16,24 @@ namespace GCalSync.Helpers
     {
         private class AccountServiceDetails
         {
-            public CalendarService CalendarService { get; set; }
-            public UserCredential UserCredential { get; set; }
+            public CalendarService CalendarService { get; set; } = null;
+            public UserCredential UserCredential { get; set; } = null;
+            public bool IsFromAccount { get; set; }
+
+            public AccountServiceDetails(bool isFromAccount)
+            {
+                using var credentialsStream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read);
+
+                string credPath = $"{(isFromAccount ? "from" : "to")}_acc_token";
+                UserCredential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.FromStream(credentialsStream).Secrets,
+                    ApplicationSettings.CalendarScopes,
+                    "user",
+                    CancellationToken.None,
+                    new FileDataStore(credPath, true)).Result;
+
+                UpdateCalendarService();
+            }
 
             public void UpdateCalendarService()
             {
@@ -30,13 +46,13 @@ namespace GCalSync.Helpers
 
             public void RefreshToken()
             {
-                UserCredential.RefreshTokenAsync(CancellationToken.None);
+                UserCredential.RefreshTokenAsync(CancellationToken.None).Wait();
                 UpdateCalendarService();
             }
         }
 
-        private static AccountServiceDetails _fromAccountService { get; set; } = new AccountServiceDetails();
-        private static AccountServiceDetails _toAccountService { get; set; } = new AccountServiceDetails();
+        private static AccountServiceDetails _fromAccountService { get; set; } = null;
+        private static AccountServiceDetails _toAccountService { get; set; } = null;
 
 
         private static DateTime _lastAuthDate = DateTime.MinValue;
@@ -51,41 +67,23 @@ namespace GCalSync.Helpers
                 _currentAccountDetails = _toAccountService;
         }
 
-        public static void Init()
-        {
-            InitializeCredentials(true);
-            InitializeCredentials(false);
-        }
-
-        private static void InitializeCredentials(bool isFromAccount)
-        {
-            using var credentialsStream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read);
-
-            AccountServiceDetails accountServiceDetails = _fromAccountService;
-
-            if (!isFromAccount)
-                accountServiceDetails = _toAccountService;
-
-
-            string credPath = $"{(isFromAccount ? "from" : "to")}_acc_token";
-            accountServiceDetails.UserCredential = GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.FromStream(credentialsStream).Secrets,
-                ApplicationSettings.CalendarScopes,
-                "user",
-                CancellationToken.None,
-                new FileDataStore(credPath, true)).Result;
-
-            accountServiceDetails.UpdateCalendarService();
-        }
-
         public static void ValidateAuthToken()
         {
+            if (_fromAccountService == null || _toAccountService == null)
+            {
+                _fromAccountService = new AccountServiceDetails(true);
+                _toAccountService = new AccountServiceDetails(false);
+                return;
+            }
+
             // For now refresh token every 24 hours - If it fails, then we need to add
             // a check for when the token expires and refresh the token at that time
             if ((DateTime.UtcNow - _lastAuthDate).TotalHours > 24)
             {
                 _fromAccountService.RefreshToken();
                 _toAccountService.RefreshToken();
+
+                _lastAuthDate = DateTime.UtcNow;
             }
         }
 
