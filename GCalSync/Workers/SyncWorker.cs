@@ -45,7 +45,7 @@ namespace GCalSync.Workers
             }
             catch (Exception ex)
             {
-                LoggerHelper.AddLog(ex.Message, LoggerHelper.Severity.ERROR);
+                LoggerHelper.AddLog(ex.Message, LoggerHelper.Severity.ERROR, ex);
                 APIHelper.MakeRequest<object>("https://watzonservices.ddns.net:18200/setLedsColour", RestSharp.Method.POST, new
                 {
                     red = 255,
@@ -72,7 +72,14 @@ namespace GCalSync.Workers
                 string fromEventReference = BuildEventReference(fromEvent);
 
                 if (!toEventReferenceToEvent.ContainsKey(fromEventReference))
-                    eventsToAdd.Add(fromEvent);
+                {
+                    // If there are no attendees (custom) OR
+                    // All the attendees matching the account did not decline
+                    if (fromEvent.Attendees == null || fromEvent.Attendees.Count == 0 ||
+                        fromEvent.Attendees.Where(att => ApplicationSettings.FromAccountIdsSync.Contains(att.Email))
+                            .All(att => att.ResponseStatus != "declined"))
+                        eventsToAdd.Add(fromEvent);
+                }
                 else
                 {
                     // Check if Start and End dates are the same

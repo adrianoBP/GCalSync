@@ -7,7 +7,7 @@ namespace GCalSync.Helpers
     {
         public static readonly string LogFolder = "Logs";
 
-        public static void AddLog(string message, Severity severity)
+        public static void AddLog(string message, Severity severity, Exception ex = null)
         {
             if (!Directory.Exists(LogFolder))
                 Directory.CreateDirectory(LogFolder);
@@ -15,7 +15,7 @@ namespace GCalSync.Helpers
             string filePath = $"{LogFolder}/{DateTime.UtcNow:yyyyMMdd}.log";
             string logMessage = $"{DateTime.UtcNow:HH:mm} [{severity}] - {message}\n";
 
-            File.AppendAllText(filePath, logMessage);
+            File.AppendAllText(filePath, logMessage + $"{(ex != null ? $"\nStackTrace: {ex.StackTrace}" : "")}");
         }
 
         public enum Severity
