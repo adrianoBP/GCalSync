@@ -46,7 +46,8 @@ namespace GCalSync.Helpers
 
             public void RefreshToken()
             {
-                UserCredential.RefreshTokenAsync(CancellationToken.None).Wait();
+                bool tokenRefreshed = UserCredential.RefreshTokenAsync(CancellationToken.None).Result;
+                LoggerHelper.AddLog($"Token freshed: {tokenRefreshed}", LoggerHelper.Severity.DEBUG);
                 UpdateCalendarService();
             }
         }
@@ -80,6 +81,8 @@ namespace GCalSync.Helpers
             // a check for when the token expires and refresh the token at that time
             if ((DateTime.UtcNow - _lastAuthDate).TotalHours > 24)
             {
+                LoggerHelper.AddLog("Refreshing tokens", LoggerHelper.Severity.DEBUG);
+
                 _fromAccountService.RefreshToken();
                 _toAccountService.RefreshToken();
 
